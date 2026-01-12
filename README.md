@@ -5,7 +5,7 @@
 ```sh
 cd hello
 
-make build
+make modules
 make insmod
 make rmmod
 ```

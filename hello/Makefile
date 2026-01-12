@@ -3,7 +3,7 @@ obj-m := hello.o
 KDIR ?= $(K_DIR)
 PWD := $(shell pwd)
 
-all:
+modules:
 	$(MAKE) -C $(KDIR) M=$(PWD) modules
 
 clean:
