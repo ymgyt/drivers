@@ -10,7 +10,7 @@
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
-      # how to set this value properlly?
+      # how to set this value properly?
       kDir = "/nix/store/nx4mdfzx7rkwl9zkqspmfcxxznd92akj-linux-6.12.63-dev/lib/modules/6.12.63/build";
     in
     {
