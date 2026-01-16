@@ -12,9 +12,26 @@
       pkgs = import nixpkgs { inherit system; };
       # how to set this value properly?
       kDir = "/nix/store/nx4mdfzx7rkwl9zkqspmfcxxznd92akj-linux-6.12.63-dev/lib/modules/6.12.63/build";
+
+      llvm = pkgs.llvmPackages_20;
     in
     {
       devShells.${system}.default = pkgs.mkShell {
+        packages = with pkgs; [
+          llvm.clang-tools
+          llvm.clang-unwrapped
+          llvm.lld
+          llvm.llvm
+
+          stdenv.cc
+
+          b4
+          bc
+          elfutils
+          flex
+          bison
+          bear
+        ];
         K_DIR = kDir;
 
         shellHook = ''
