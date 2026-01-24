@@ -23,6 +23,12 @@
           llvm.lld
           llvm.llvm
 
+          # bindgen用
+          llvm.libclang
+          # header内のincludeを解決
+          # 厳密にはkDirを参照する必要があるように思われる
+          linuxHeaders
+
           stdenv.cc
 
           b4
@@ -33,6 +39,10 @@
           bear
         ];
         K_DIR = kDir;
+
+        # bindgen用
+        LIBCLANG_PATH = "${llvm.libclang.lib}/lib";
+        BINDGEN_EXTRA_CLANG_ARGS = "-isystem ${pkgs.linuxHeaders}/include";
 
         shellHook = ''
           exec nu
