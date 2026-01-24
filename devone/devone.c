@@ -1,4 +1,6 @@
-#include "linux/kern_levels.h"
+#include "asm-generic/errno-base.h"
+#include "linux/spinlock.h"
+#include <linux/kern_levels.h>
 #include <linux/init.h>
 #include <linux/cdev.h>
 #include <linux/fs.h>
@@ -15,12 +17,28 @@ static int devone_major = 0; /* dynamic allocation */
 static int devone_devs = 2;
 static struct cdev devone_cdev;
 
+struct devone_data {
+  unsigned char val;
+  rwlock_t lock;
+};
+
 static int devone_open(struct inode *inode, struct file *file) {
+  struct devone_data *p;
+
   printk("%s: major %d minor %d (pid %d)\n", __func__, imajor(inode),
          iminor(inode), current->pid);
 
+  p = kmalloc(sizeof(struct devone_data), GFP_KERNEL);
+  if (p == NULL) {
+    printk("%s: No memory\n", __func__);
+    return -ENOMEM;
+  }
+
+  p->val = 0xff;
+  rwlock_init(&p->lock);
+
   inode->i_private = inode;
-  file->private_data = file;
+  file->private_data = p;
 
   printk("  i_private=%p private_data=%p\n", inode->i_private,
          file->private_data);
@@ -34,12 +52,66 @@ static int devone_close(struct inode *inode, struct file *file)
     imajor(inode), iminor(inode), current->pid);
   printk("  i_private=%p private_data=%p\n", inode->i_private, file->private_data);
 
+  if (file->private_data) {
+    kfree(file->private_data);
+    file->private_data = NULL;
+  }
+
   return 0;
+}
+
+static ssize_t devone_write(struct file *filep, const char __user *buf, size_t count, loff_t *f_pos)
+{
+    struct devone_data *p = filep->private_data;
+    unsigned char val;
+    int retval = 0;
+
+    printk("%s: count %zu pos %lld\n", __func__, count, *f_pos);
+
+    if (count >= 1) {
+      if (copy_from_user(&val, &buf[0], 1)) {
+        retval = -EFAULT;
+        goto out;
+      }
+      write_lock(&p->lock);
+      p->val = val;
+      write_unlock(&p->lock);
+      retval = count;
+    }
+
+out:
+  return (retval);
+}
+
+static ssize_t devone_read(struct file *filep, char __user *buf, size_t count, loff_t *f_pos)
+{
+  struct devone_data *p = filep->private_data;
+  int i;
+  unsigned char val;
+  int retval;
+
+  read_lock(&p->lock);
+  val = p->val;
+  read_unlock(&p->lock);
+
+  printk("%s: count %zu pos %lld\n", __func__, count, *f_pos);
+
+  for (i = 0; i < count ; i++) {
+    if (copy_to_user(&buf[i], &val, 1)) {
+      retval = -EFAULT;
+      goto out;
+    }
+  }
+  retval = count;
+out:
+  return (retval);
 }
 
 struct file_operations devone_fops = {
     .open = devone_open,
     .release = devone_close,
+    .write = devone_write,
+    .read = devone_read,
 };
 
 static int __init devone_init(void) {

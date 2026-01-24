@@ -1,8 +1,10 @@
-obj-m := devone.o
-
 MOD_NAME := "devone"
 KDIR ?= $(K_DIR)
 PWD := $(shell pwd)
+# CFILES = devone.c
+
+obj-m := devone.o
+# devone-objs := $(CFILES:.c=.o)
 
 modules:
 	$(MAKE) -C $(KDIR) M=$(PWD) modules
