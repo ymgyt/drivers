@@ -11,7 +11,7 @@
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
       # how to set this value properly?
-      kDir = "/nix/store/13aigh240fpwqws8dynryi14vfhjqsah-linux-6.18.2-dev/lib/modules/6.18.2/build";
+      kDir = "/nix/store/cbc470bffdhc9wg1bgk54i6a3s5a1ygq-linux-6.18.6-dev/lib/modules/6.18.6/build";
 
       llvm = pkgs.llvmPackages_20;
     in

@@ -3,8 +3,8 @@
 ## udev rule
 
 ```sh
-cat <<EOF > /run/udev/rules.d/51-devone.rules
-KERNEL=="devone[0-9]*", GROUP="root" MODE="0644"
+cat <<EOF | sudo tee /run/udev/rules.d/51-devone.rules > /dev/null
+KERNEL=="devone[0-9]*", GROUP="root",  MODE="0644"
 EOF
 ```
 

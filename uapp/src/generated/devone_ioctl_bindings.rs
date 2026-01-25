@@ -36,3 +36,6 @@ const _: () = {
     ["Offset of field: ioctl_cmd::offset"][::std::mem::offset_of!(ioctl_cmd, offset) - 4usize];
     ["Offset of field: ioctl_cmd::val"][::std::mem::offset_of!(ioctl_cmd, val) - 8usize];
 };
+pub const IOCTL_VALSET: _bindgen_ty_1 = 1074553857;
+pub const IOCTL_VALGET: _bindgen_ty_1 = 2148295682;
+pub type _bindgen_ty_1 = ::std::os::raw::c_uint;
