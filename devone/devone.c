@@ -1,14 +1,23 @@
 #include <asm-generic/errno-base.h>
+#include <asm-generic/errno.h>
+#include <asm-generic/poll.h>
+#include <linux/atomic.h>
 #include <linux/capability.h>
 #include <linux/cdev.h>
 #include <linux/device.h>
 #include <linux/fs.h>
+#include <linux/jiffies.h>
 #include <linux/init.h>
 #include <linux/ioctl.h>
 #include <linux/kdev_t.h>
+#include <linux/kernel.h>
 #include <linux/kern_levels.h>
 #include <linux/module.h>
+#include <linux/poll.h>
 #include <linux/spinlock.h>
+#include <linux/tty.h>
+#include <linux/timer.h>
+#include <linux/wait.h>
 
 #include "devone_ioctl.h"
 
@@ -17,6 +26,7 @@ MODULE_AUTHOR("ymgyt");
 MODULE_DESCRIPTION("devone");
 
 #define DRIVER_NAME "devone"
+#define DEVONE_READ_DELAY_MS 1000
 
 static int devone_major = 0; /* dynamic allocation */
 static int devone_minor = 0; /* static allocation */
@@ -28,7 +38,21 @@ static struct device *devone_device = NULL;
 struct devone_data {
   unsigned char val;
   rwlock_t lock;
+
+  /* mock read latency */
+  wait_queue_head_t read_wq;
+  atomic_t read_ready;
+  struct timer_list read_timer;
 };
+
+static void devone_read_timer_cb(struct timer_list *t)
+{
+  struct devone_data *p = container_of(t, struct devone_data, read_timer);
+  atomic_set(&p->read_ready, 1);
+  pr_info("%s: Wake up!\n", __func__);
+  wake_up(&p->read_wq);
+}
+
 
 static int devone_open(struct inode *inode, struct file *file) {
   struct devone_data *p;
@@ -44,6 +68,11 @@ static int devone_open(struct inode *inode, struct file *file) {
 
   p->val = 0xff;
   rwlock_init(&p->lock);
+
+  /* prepare mock read latency */
+  init_waitqueue_head(&p->read_wq);
+  atomic_set(&p->read_ready, 1);
+  timer_setup(&p->read_timer, devone_read_timer_cb, 0);
 
   inode->i_private = inode;
   file->private_data = p;
@@ -61,6 +90,8 @@ static int devone_close(struct inode *inode, struct file *file) {
          file->private_data);
 
   if (file->private_data) {
+    struct devone_data *p = file->private_data;
+    timer_delete_sync(&p->read_timer);
     kfree(file->private_data);
     file->private_data = NULL;
   }
@@ -97,7 +128,22 @@ static ssize_t devone_read(struct file *filep, char __user *buf, size_t count,
   int i;
   unsigned char val;
   int retval;
+  long wr;
 
+  atomic_set(&p->read_ready,0);
+  /* jiffies直接読んでいいのか? */
+  mod_timer(&p->read_timer, jiffies + msecs_to_jiffies(DEVONE_READ_DELAY_MS));
+  
+  wr = wait_event_interruptible_timeout(
+    p->read_wq,
+    atomic_read(&p->read_ready) != 0,
+    msecs_to_jiffies(DEVONE_READ_DELAY_MS + 1000)
+  );
+  if (wr == 0)
+    return -ETIMEDOUT;
+  if (wr < 0)
+    return wr;
+  
   read_lock(&p->lock);
   val = p->val;
   read_unlock(&p->lock);
@@ -168,6 +214,18 @@ static long int devone_ioctl(struct file *filep, unsigned int cmd,
   return 0;
 }
 
+static unsigned int devone_poll(struct file *filp, poll_table *wait)
+{
+  struct devone_data *dev = filp->private_data;
+
+  if (dev == NULL)
+    return -EBADFD;
+
+  pr_info("%s: poll called\n", __func__);
+
+  return POLLIN | POLLRDNORM | POLLOUT | POLLWRNORM;
+}
+
 struct file_operations devone_fops = {
     .open = devone_open,
     .release = devone_close,
@@ -175,13 +233,25 @@ struct file_operations devone_fops = {
     .read = devone_read,
     /* .ioctl は削除 */
     .unlocked_ioctl = devone_ioctl,
+    .poll = devone_poll,
 };
+
+static void pr_tty_console(char *msg)
+{
+  struct tty_struct *tty;
+
+  tty = current -> signal -> tty;
+  if (tty != NULL) {
+    (tty->driver->ops->write)(tty, msg, strlen(msg));
+    (tty->driver->ops->write)(tty, "\r\n", 2);
+  }
+}
 
 static int __init devone_init(void) {
   dev_t dev = MKDEV(devone_major, devone_minor);
   int ret;
 
-  /* ここでdevが初期化される */
+  /* major:minorを動的に確保 */
   ret = alloc_chrdev_region(&dev, 0, devone_devs, DRIVER_NAME);
   if (ret)
     return ret;
@@ -209,12 +279,15 @@ static int __init devone_init(void) {
     goto err_class;
   }
 
+  /* VFSに登録 */
   ret = cdev_add(&devone_cdev, dev, devone_devs);
   if (ret)
     goto err_device;
 
   printk(KERN_ALERT "%s: driver(major %d) installed\n", DRIVER_NAME,
          devone_major);
+  pr_tty_console("devone loaded(from tty console)\n");
+
   return 0;
 
 err_device:

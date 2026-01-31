@@ -14,8 +14,8 @@ clean:
 
 insmod:
 	sudo insmod ./devone.ko
-	sudo dmesg -T | rg $(MOD_NAME):
+	sudo dmesg -T | tail -n 50 | rg $(MOD_NAME):
 
 rmmod:
 	sudo rmmod devone
-	sudo dmesg -T | rg $(MOD_NAME):
+	sudo dmesg -T | tail -n 50 | rg $(MOD_NAME):
