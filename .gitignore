@@ -13,3 +13,7 @@ modules.order
 
 # clangd
 .cache/
+
+# vm images
+*.qcow2
+vm/domains/*/domain.xml
