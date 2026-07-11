@@ -13,7 +13,9 @@ modules.order
 
 # clangd
 .cache/
+/compile_commands.json
 
 # vm images
 *.qcow2
+/vm/storage/*.part
 vm/domains/*/domain.xml

@@ -1,7 +1,7 @@
 use std::{fs::OpenOptions, io, os::fd::AsRawFd as _};
 
+use devone_userspace::bindings::devone_ioctl::{IOCTL_VALGET, IOCTL_VALSET, ioctl_cmd};
 use tracing::info;
-use uapp::bindings::devone_ioctl::{IOCTL_VALGET, IOCTL_VALSET, ioctl_cmd};
 
 fn ioctl_valset(fd: i32, val: u32) -> io::Result<()> {
     let mut data = ioctl_cmd {

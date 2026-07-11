@@ -1,5 +1,5 @@
 <domain type='kvm'>
-  <name>edu-deb13</name>
+  <name>${DOMAIN_NAME}</name>
   <memory unit='MiB'>2048</memory>
   <currentMemory unit='MiB'>2048</currentMemory>
   <vcpu placement='static'>2</vcpu>
@@ -21,9 +21,9 @@
   <on_crash>destroy</on_crash>
 
   <devices>
-    <disk type='file' device='disk'>
+    <disk type='volume' device='disk'>
       <driver name='qemu' type='qcow2'/>
-      <source file='${OVERLAY_QCOW2}'/>
+      <source pool='${POOL_NAME}' volume='${VOLUME_NAME}'/>
       <target dev='vda' bus='virtio'/>
     </disk>
 
@@ -35,5 +35,4 @@
       <target type='serial' port='0'/>
     </console>
   </devices>
-  
 </domain>

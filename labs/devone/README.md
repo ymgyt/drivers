@@ -11,9 +11,7 @@ EOF
 ## userspace app
 
 ```sh
-make modules
-make insmod
-
-cd ../uapp
-cargo run --bin devone_ioctl
+make -C module modules
+make -C module insmod
+cargo run --manifest-path userspace/Cargo.toml --bin ioctl
 ```

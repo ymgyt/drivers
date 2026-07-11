@@ -323,7 +323,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "uapp"
+name = "devone-userspace"
 version = "0.1.0"
 dependencies = [
  "anyhow",
