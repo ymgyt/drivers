@@ -18,4 +18,8 @@ modules.order
 # vm images
 *.qcow2
 /vm/storage/*.part
+/vm/shared/
 vm/domains/*/domain.xml
+
+# kernel build
+.build/

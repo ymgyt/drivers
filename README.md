@@ -22,12 +22,5 @@ just vm pool start
 ```sh
 just vm init deb13
 just vm start deb13
-just vm sh deb13
-```
-
-## clangd
-
-```sh
-bear --append --output compile_commands.json -- \
-  make -C "$K_DIR" M="$PWD/labs/hello" HOSTCC=cc modules
+just vm console deb13
 ```

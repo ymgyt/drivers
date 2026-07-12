@@ -2,7 +2,7 @@ vm_script := justfile_directory() / "dev" / "scripts" / "vm.nu"
 root_justfile := justfile_directory() / "justfile"
 
 # Storage pool tasks
-mod pool "vm/pool.just"
+mod pool "pool.just"
 
 [private]
 default:

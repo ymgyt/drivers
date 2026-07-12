@@ -13,8 +13,8 @@ const VM_SPEC = {
     }
     paths: {
         storage: "vm/storage"
+        shared: "vm/shared"
         domains: "vm/domains"
-        domain_template: "vm/domain.tmpl.xml"
     }
 }
 
@@ -44,9 +44,10 @@ def resolve-vm [spec: record, machine: string] {
             volume: $volume
             path: ([$spec.paths.storage $volume] | path join)
         }
+        shared: ($spec.paths.shared | path expand)
         domain: {
             dir: $domain_dir
-            template: $spec.paths.domain_template
+            template: ([$domain_dir "domain.tmpl.xml"] | path join)
             xml: ([$domain_dir "domain.xml"] | path join)
         }
     }
@@ -154,17 +155,16 @@ def overlay [vm: record, libvirt: record] {
     virsh $libvirt "vol-info" $vm.disk.volume "--pool" $libvirt.pool
 }
 
-# Render a domain XML that references the VM's pool volume.
-def domain [vm: record, libvirt: record] {
+# Render a domain XML with host-specific paths.
+def domain [vm: record] {
     mkdir $vm.domain.dir
+    mkdir $vm.shared
     with-env {
-        DOMAIN_NAME: $vm.name
-        POOL_NAME: $libvirt.pool
-        VOLUME_NAME: $vm.disk.volume
+        SHARED_DIR: $vm.shared
     } {
         open --raw $vm.domain.template
             | decode utf-8
-            | ^envsubst '$DOMAIN_NAME $POOL_NAME $VOLUME_NAME'
+            | ^envsubst '$SHARED_DIR'
             | save --force $vm.domain.xml
     }
     print $"domain: rendered ($vm.domain.xml)"
@@ -205,7 +205,7 @@ def main [command: string, machine?: string] {
         "pool-info" => { pool-info $VM_SPEC.libvirt }
         "image" => { image (resolve-image $VM_SPEC) $VM_SPEC.libvirt }
         "overlay" => { overlay (resolve-vm $VM_SPEC $machine) $VM_SPEC.libvirt }
-        "domain" => { domain (resolve-vm $VM_SPEC $machine) $VM_SPEC.libvirt }
+        "domain" => { domain (resolve-vm $VM_SPEC $machine) }
         "define" => { define-domain (resolve-vm $VM_SPEC $machine) $VM_SPEC.libvirt }
         "start" => { start-domain (resolve-vm $VM_SPEC $machine) $VM_SPEC.libvirt }
         "boot" => { start-domain (resolve-vm $VM_SPEC $machine) $VM_SPEC.libvirt --console }
