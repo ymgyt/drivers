@@ -1,0 +1,53 @@
+<domain type='kvm'>
+  <name>rust</name>
+  <uuid>5ecd39df-0b03-4cb6-9d9d-5ebed3d88a51</uuid>
+
+  <memory unit='MiB'>2048</memory>
+  <currentMemory unit='MiB'>2048</currentMemory>
+  <memoryBacking>
+    <source type='memfd'/>
+    <access mode='shared'/>
+  </memoryBacking>
+
+  <vcpu placement='static'>2</vcpu>
+
+  <os firmware='efi'>
+    <type arch='x86_64' machine='pc-q35-10.2'>hvm</type>
+    <kernel>${KERNEL_IMAGE}</kernel>
+    <cmdline>root=PARTUUID=97776fde-1f95-48c5-8ccd-c670aeea4bf4 ro console=tty0 console=ttyS0,115200 earlyprintk=ttyS0,115200 consoleblank=0</cmdline>
+  </os>
+
+  <features>
+    <acpi/>
+    <apic/>
+  </features>
+
+  <cpu mode='host-passthrough'/>
+
+  <clock offset='utc'/>
+  <on_poweroff>destroy</on_poweroff>
+  <on_reboot>destroy</on_reboot>
+  <on_crash>destroy</on_crash>
+
+  <devices>
+    <disk type='volume' device='disk'>
+      <driver name='qemu' type='qcow2'/>
+      <source pool='drivers' volume='rust.qcow2'/>
+      <target dev='vda' bus='virtio'/>
+    </disk>
+
+    <filesystem type='mount' accessmode='passthrough'>
+      <driver type='virtiofs'/>
+      <source dir='${SHARED_DIR}'/>
+      <target dir='drivers'/>
+    </filesystem>
+
+    <serial type='pty'>
+      <target type='isa-serial' port='0'/>
+    </serial>
+
+    <console type='pty'>
+      <target type='serial' port='0'/>
+    </console>
+  </devices>
+</domain>

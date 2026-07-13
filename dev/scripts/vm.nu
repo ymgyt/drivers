@@ -15,6 +15,7 @@ const VM_SPEC = {
         storage: "vm/storage"
         shared: "vm/shared"
         domains: "vm/domains"
+        kernel: ".build/rust-next/arch/x86/boot/bzImage"
     }
 }
 
@@ -45,6 +46,7 @@ def resolve-vm [spec: record, machine: string] {
             path: ([$spec.paths.storage $volume] | path join)
         }
         shared: ($spec.paths.shared | path expand)
+        kernel: ($spec.paths.kernel | path expand)
         domain: {
             dir: $domain_dir
             template: ([$domain_dir "domain.tmpl.xml"] | path join)
@@ -161,10 +163,11 @@ def domain [vm: record] {
     mkdir $vm.shared
     with-env {
         SHARED_DIR: $vm.shared
+        KERNEL_IMAGE: $vm.kernel
     } {
         open --raw $vm.domain.template
             | decode utf-8
-            | ^envsubst '$SHARED_DIR'
+            | ^envsubst '$SHARED_DIR $KERNEL_IMAGE'
             | save --force $vm.domain.xml
     }
     print $"domain: rendered ($vm.domain.xml)"
