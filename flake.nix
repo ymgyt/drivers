@@ -65,6 +65,7 @@
           export HOSTCC="${llvm.clang}/bin/clang"
           export HOSTCXX="${llvm.clang}/bin/clang++"
           export BINDGEN="${pkgs.rust-bindgen-unwrapped}/bin/bindgen"
+          export KERNEL_MAKE_ARGS="LLVM=1 CC=$CC HOSTCC=$HOSTCC HOSTCXX=$HOSTCXX BINDGEN=$BINDGEN"
           exec nu
         '';
       };

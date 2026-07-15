@@ -3,10 +3,7 @@ kernel_build := justfile_directory() / ".build" / "rust-next"
 kernel_config := justfile_directory() / "dev" / "kernel" / "config" / "debian-13-amd64"
 root_justfile := justfile_directory() / "justfile"
 build_jobs := num_cpus()
-cc := env_var("CC")
-hostcc := env_var("HOSTCC")
-hostcxx := env_var("HOSTCXX")
-bindgen := env_var("BINDGEN")
+kernel_make_args := env_var("KERNEL_MAKE_ARGS")
 
 [private]
 default:
@@ -14,7 +11,7 @@ default:
 
 [private]
 make *args:
-    make -C "{{ linux_source }}" "O={{ kernel_build }}" LLVM=1 "CC={{ cc }}" "HOSTCC={{ hostcc }}" "HOSTCXX={{ hostcxx }}" "BINDGEN={{ bindgen }}" {{ args }}
+    make -C "{{ linux_source }}" "O={{ kernel_build }}" {{ kernel_make_args }} {{ args }}
 
 [private]
 config *args:
@@ -39,3 +36,6 @@ menuconfig: (make "menuconfig")
 
 # Build the x86 bootable kernel image using all host CPUs.
 image: (make ("-j" + build_jobs) "bzImage")
+
+# Build in-tree kernel modules and generate Module.symvers.
+modules: (make ("-j" + build_jobs) "modules")
