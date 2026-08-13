@@ -46,6 +46,7 @@
         llvm.lld
         llvm.llvm
         llvm.libclang
+        pkgs.rustc
         pkgs.rust-bindgen-unwrapped
       ];
     in
@@ -59,13 +60,15 @@
           pkgs.openssl
         ];
         LIBCLANG_PATH = "${llvm.libclang.lib}/lib";
+        RUSTC = "${pkgs.rustc}/bin/rustc";
+        RUST_LIB_SRC = "${pkgs.rust.packages.stable.rustPlatform.rustLibSrc}";
 
         shellHook = ''
           export CC="${llvm.clang-unwrapped}/bin/clang"
           export HOSTCC="${llvm.clang}/bin/clang"
           export HOSTCXX="${llvm.clang}/bin/clang++"
           export BINDGEN="${pkgs.rust-bindgen-unwrapped}/bin/bindgen"
-          export KERNEL_MAKE_ARGS="LLVM=1 CC=$CC HOSTCC=$HOSTCC HOSTCXX=$HOSTCXX BINDGEN=$BINDGEN"
+          export KERNEL_MAKE_ARGS="LLVM=1 CC=$CC HOSTCC=$HOSTCC HOSTCXX=$HOSTCXX RUSTC=$RUSTC BINDGEN=$BINDGEN"
           exec nu
         '';
       };

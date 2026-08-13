@@ -14,7 +14,7 @@
   <os firmware='efi'>
     <type arch='x86_64' machine='pc-q35-10.2'>hvm</type>
     <kernel>${KERNEL_IMAGE}</kernel>
-    <cmdline>root=PARTUUID=97776fde-1f95-48c5-8ccd-c670aeea4bf4 ro console=tty0 console=ttyS0,115200 earlyprintk=ttyS0,115200 consoleblank=0</cmdline>
+    <cmdline>root=PARTUUID=6cf4a790-ccd9-46ad-a256-5f853165c65e ro console=tty0 console=ttyS0,115200 earlyprintk=ttyS0,115200 consoleblank=0</cmdline>
   </os>
 
   <features>

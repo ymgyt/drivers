@@ -6,10 +6,10 @@ const VM_SPEC = {
         pool: "drivers"
     }
     image: {
-        file: "debian-13-nocloud-amd64.qcow2"
-        url: "https://cloud.debian.org/images/cloud/trixie/latest/debian-13-nocloud-amd64.qcow2"
-        # Published at https://cloud.debian.org/images/cloud/trixie/latest/SHA512SUMS
-        sha512: "4bac74c59b8d5f7fe853b0c5e0c5c91ff76b54b0361324dd0c6e361373c694644a538ffe98748e90b46bd598ca0d6567f35fd135bae7728ae212646821dd94b3"
+        file: "debian-13-nocloud-amd64-20260810-2566.qcow2"
+        url: "https://cloud.debian.org/images/cloud/trixie/20260810-2566/debian-13-nocloud-amd64-20260810-2566.qcow2"
+        # Published at https://cloud.debian.org/images/cloud/trixie/20260810-2566/SHA512SUMS
+        sha512: "cf9a391a6d1eb97085bd9ca14c2f1a73f80dd9575108a2cc33d71907706c468e41348d29387812d335188516fdab1e3b3b5d9fd0d410c4495a8c2decd4a3c2c2"
     }
     paths: {
         storage: "vm/storage"
@@ -90,8 +90,8 @@ def pool-info [libvirt: record] {
 def image [image: record, libvirt: record] {
     mkdir $image.dir
 
-    let downloaded = not ($image.path | path exists)
-    let candidate = if $downloaded {
+    let needs_download = not ($image.path | path exists)
+    let candidate = if $needs_download {
         print $"image: downloading ($image.name)"
         let partial = $"($image.path).part"
         ^curl --fail --location --show-error --output $partial $image.url
@@ -108,7 +108,7 @@ def image [image: record, libvirt: record] {
     print "image: verifying SHA-512"
     let digest = (^sha512sum $candidate | parse "{sha512}  {path}" | first)
     if $digest.sha512 != $image.sha512 {
-        if $downloaded {
+        if $needs_download {
             rm --force $candidate
         }
         error make {
@@ -117,7 +117,7 @@ def image [image: record, libvirt: record] {
     }
     print "image: checksum verified"
 
-    if $downloaded {
+    if $needs_download {
         mv $candidate $image.path
     }
 
@@ -180,6 +180,29 @@ def define-domain [vm: record, libvirt: record] {
     virsh $libvirt "dominfo" $vm.name
 }
 
+# Undefine a stopped domain and delete its per-VM persistent state.
+def undefine-domain [vm: record, libvirt: record] {
+    let state_args = ["domstate" $vm.name]
+    let state_command = (["virsh" "--connect" $libvirt.uri] | append $state_args) | str join " "
+    print $"command: ($state_command)"
+
+    let state_result = (^virsh --connect $libvirt.uri ...$state_args | complete)
+    if $state_result.exit_code != 0 {
+        error make {
+            msg: $"virsh command failed with exit code ($state_result.exit_code): ($state_args | str join ' ')"
+        }
+    }
+
+    let state = $state_result.stdout | str trim
+    if $state != "shut off" {
+        error make {
+            msg: $"domain must be shut off before undefine: ($vm.name) is ($state)"
+        }
+    }
+
+    virsh $libvirt "undefine" $vm.name "--managed-save" "--nvram" "--storage" "vda"
+}
+
 # Start a previously defined domain, optionally attached to its console.
 def start-domain [vm: record, libvirt: record, --console] {
     print $"domain: starting ($vm.name)"
@@ -210,6 +233,7 @@ def main [command: string, machine?: string] {
         "overlay" => { overlay (resolve-vm $VM_SPEC $machine) $VM_SPEC.libvirt }
         "domain" => { domain (resolve-vm $VM_SPEC $machine) }
         "define" => { define-domain (resolve-vm $VM_SPEC $machine) $VM_SPEC.libvirt }
+        "undefine" => { undefine-domain (resolve-vm $VM_SPEC $machine) $VM_SPEC.libvirt }
         "start" => { start-domain (resolve-vm $VM_SPEC $machine) $VM_SPEC.libvirt }
         "boot" => { start-domain (resolve-vm $VM_SPEC $machine) $VM_SPEC.libvirt --console }
         "console" => { console (resolve-vm $VM_SPEC $machine) $VM_SPEC.libvirt }

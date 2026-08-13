@@ -13,6 +13,9 @@ default:
 make *args:
     make -C "{{ linux_source }}" "O={{ kernel_build }}" {{ kernel_make_args }} {{ args }}
 
+# Check whether the Rust toolchain required by the kernel is available.
+rustavailable: (make "rustavailable")
+
 [private]
 config *args:
     "{{ linux_source }}/scripts/config" --file "{{ kernel_build }}/.config" {{ args }}

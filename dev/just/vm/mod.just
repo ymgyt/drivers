@@ -27,6 +27,10 @@ domain machine: (overlay machine)
 define machine: (domain machine)
     @nu "{{ vm_script }}" define "{{ machine }}"
 
+# Undefine a stopped domain and delete its NVRAM and writable overlay.
+undefine machine:
+    @nu "{{ vm_script }}" undefine "{{ machine }}"
+
 # Start a previously defined domain.
 start machine:
     @nu "{{ vm_script }}" start "{{ machine }}"
