@@ -1,6 +1,6 @@
 #
 # Automatically generated file; DO NOT EDIT.
-# Linux/x86 6.12.95 Kernel Configuration
+# Linux/x86 6.12.101 Kernel Configuration
 #
 CONFIG_CC_VERSION_TEXT="x86_64-linux-gnu-gcc-14 (Debian 14.2.0-19) 14.2.0"
 CONFIG_CC_IS_GCC=y
@@ -6570,6 +6570,7 @@ CONFIG_AGP_SIS=y
 CONFIG_AGP_VIA=y
 CONFIG_INTEL_GTT=y
 CONFIG_VGA_SWITCHEROO=y
+CONFIG_GPU_BUDDY=y
 CONFIG_DRM=m
 CONFIG_DRM_MIPI_DSI=y
 # CONFIG_DRM_DEBUG_MM is not set
@@ -11137,6 +11138,7 @@ CONFIG_HAVE_KCSAN_COMPILER=y
 # CONFIG_NET_DEV_REFCNT_TRACKER is not set
 # CONFIG_NET_NS_REFCNT_TRACKER is not set
 # CONFIG_DEBUG_NET is not set
+# CONFIG_DEBUG_NET_SMALL_RTNL is not set
 # end of Networking Debugging
 
 #
