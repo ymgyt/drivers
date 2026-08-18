@@ -22,17 +22,25 @@ config *args:
 
 # Reset .config from the tracked Debian seed configuration.
 initconfig:
-    mkdir "{{ kernel_build }}"
+    mkdir -p "{{ kernel_build }}"
     cp --force "{{ kernel_config }}" "{{ kernel_build }}/.config"
 
 # Update the existing .config for the current rust-next Kconfig.
 olddefconfig: (make "olddefconfig")
+
+# Compare the current .config with the tracked Debian seed configuration.
+diffconfig:
+    "{{ linux_source }}/scripts/diffconfig" "{{ kernel_config }}" "{{ kernel_build }}/.config"
 
 # Request Rust support in the kernel configuration.
 rustconfig: (config "--enable" "GENDWARFKSYMS" "--enable" "RUST")
 
 # Build the drivers needed to boot the development VM into the kernel.
 vmconfig: (config "--enable" "VIRTIO_MENU" "--enable" "VIRTIO_PCI" "--enable" "VIRTIO_BLK" "--enable" "EXT4_FS" "--enable" "EFI_PARTITION" "--enable" "FUSE_FS" "--enable" "VIRTIO_FS" "--enable" "SERIAL_8250" "--enable" "SERIAL_8250_CONSOLE" "--enable" "VFAT_FS" "--enable" "NLS_CODEPAGE_437" "--enable" "NLS_ASCII" "--enable" "EFIVAR_FS")
+
+# Prune modules not observed in an explicit target lsmod snapshot.
+localmodconfig lsmod:
+    yes "" | make -C "{{ linux_source }}" "O={{ kernel_build }}" {{ kernel_make_args }} "LSMOD={{ justfile_directory() / lsmod }}" localmodconfig
 
 # Configure the kernel interactively.
 menuconfig: (make "menuconfig")
