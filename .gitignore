@@ -15,6 +15,9 @@ modules.order
 .cache/
 /compile_commands.json
 
+# rust-analyzer
+rust-project.json
+
 # vm images
 *.qcow2
 /vm/storage/*.part
