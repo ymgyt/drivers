@@ -6,7 +6,8 @@ use core::ptr;
 
 use kernel::{
     container_of,
-    fs::File,
+    fs::{File, Kiocb},
+    iov::{IovIterDest, IovIterSource},
     miscdevice::{MiscDevice, MiscDeviceOptions, MiscDeviceRegistration},
     new_mutex,
     prelude::*,
@@ -58,7 +59,7 @@ impl kernel::InPlaceModule for MiscDrvModule {
 struct DeviceOps;
 
 struct OpenContext {
-    _state: Arc<DeviceState>,
+    state: Arc<DeviceState>,
 }
 
 #[vtable]
@@ -77,9 +78,34 @@ impl MiscDevice for DeviceOps {
 
         Ok(KBox::new(
             OpenContext {
-                _state: module.state.clone(),
+                state: module.state.clone(),
             },
             GFP_KERNEL,
         )?)
+    }
+
+    fn read_iter(mut kiocb: Kiocb<'_, Self::Ptr>, iov: &mut IovIterDest<'_>) -> Result<usize> {
+        let ctx: &OpenContext = kiocb.file();
+        let message = ctx.state.message.lock();
+        let num_written = iov.simple_read_from_buffer(kiocb.ki_pos_mut(), &message)?;
+
+        Ok(num_written)
+    }
+
+    fn write_iter(
+        mut kiocb: Kiocb<'_, Self::Ptr>,
+        iov: &mut IovIterSource<'_>,
+    ) -> Result<usize> {
+        let ctx: &OpenContext = kiocb.file();
+
+        let num_written = {
+            let mut message = ctx.state.message.lock();
+            message.clear();
+            iov.copy_from_iter_vec(&mut *message, GFP_KERNEL)?
+        };
+
+        *kiocb.ki_pos_mut() = 0;
+
+        Ok(num_written)
     }
 }
