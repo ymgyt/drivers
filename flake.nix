@@ -46,6 +46,7 @@
         llvm.lld
         llvm.llvm
         llvm.libclang
+        pkgs.gdb
         pkgs.rustc
         pkgs.rust-bindgen-unwrapped
       ];
